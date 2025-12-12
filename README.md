@@ -1,7 +1,12 @@
 .vim
 ====
+Run `init.sh` to create symlinks in nvim default config directory
+```bash
+chmod u+x init.sh
+./init.sh
+```
 
-My vim dot files. 
+My nvim dot files. 
 
 ## Shortcuts
 
