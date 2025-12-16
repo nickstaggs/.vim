@@ -25,8 +25,4 @@ require("conform").setup({
 		-- have other formatters configured.
 		["_"] = { "trim_whitespace" },
 	},
-	-- extra-exe overrides (binary names differ on Nix sometimes):
-	formatters = {
-		alejandra = { command = "alejandra", args = { "--quiet", "-" } },
-	},
 })

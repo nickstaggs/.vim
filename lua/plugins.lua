@@ -52,6 +52,7 @@ return {
 
 		-- Lazy‑load on these keymaps -------------------------------------------
 		keys = {
+			-- Find in git tracked files
 			{
 				"<C-p>",
 				function()
@@ -66,12 +67,10 @@ return {
 					if not ok then
 						builtin.find_files()
 					end
-					if not ok then
-						builtin.find_files()
-					end
 				end,
 				desc = "Find files (incl. dot‑files)",
 			},
+			-- Grep all files in working directory
 			{
 				"<C-g>",
 				function()
@@ -79,12 +78,20 @@ return {
 				end,
 				desc = "Live Grep",
 			},
+			-- Find git branches
 			{
 				"<C-b>",
 				function()
 					require("telescope.builtin").git_branches()
 				end,
 				desc = "Git Branches",
+			},
+			-- Grep in current file or buffer
+			{
+				"<C-f>",
+				function()
+					require("telescope.builtin").live_grep({ search_dirs = { vim.fn.expand("%:p") } })
+				end,
 			},
 		},
 
@@ -110,44 +117,6 @@ return {
 						"^docs/html/",
 					},
 				},
-
-				---------------------------------------------------------------------
-				-- Picker‑specific overrides ----------------------------------------
-				---------------------------------------------------------------------
-				pickers = {
-					-- :Telescope find_files
-					find_files = {
-						hidden = true, -- include dot‑files / dot‑dirs
-						follow = true, -- follow symlinks
-						no_ignore = false, -- still respect .gitignore & friends
-						find_command = {
-							"rg",
-							"--files",
-							"--hidden",
-							"--glob",
-							"!.git/*", -- keep .git out
-							"--glob",
-							".github/**", -- BUT keep everything under .github
-							"--exclude",
-							"docs/html/**",
-						},
-					},
-
-					-- :Telescope live_grep
-					live_grep = {
-						additional_args = function()
-							return {
-								"--hidden",
-								"--glob",
-								"!.git/*",
-								"--glob",
-								".github/**",
-								"--exclude",
-								"docs/html/**",
-							}
-						end,
-					},
-				},
 			})
 		end,
 	},
@@ -162,13 +131,13 @@ return {
 			db.setup({
 				theme = "doom",
 				config = {
-					header = { "🦖  Baby Yosh Dashboard  🦖" },
+					header = { "Dashboard" },
 					center = {
 						{ desc = "  Find File           ", action = "Telescope find_files" },
-						{ desc = "  Live Grep           ", action = "Telescope live_grep" },
+						{ desc = "🔍 Live Grep           ", action = "Telescope live_grep" },
 						{ desc = "  File Explorer       ", action = "NvimTreeToggle" },
 						{ desc = "  Git Branches        ", action = "Telescope git_branches" },
-						{ desc = "  Quit                ", action = "qa" },
+						{ desc = "👋 Quit                ", action = "qa" },
 					},
 				},
 			})
@@ -230,6 +199,19 @@ return {
 		end,
 	},
 
+	{
+		"williamboman/mason.nvim",
+		opts = {
+			ui = {
+				icons = {
+					package_installed = "✓",
+					package_pending = "…",
+					package_uninstalled = "✗",
+				},
+			},
+		},
+	},
+
 	-- LSP (Language Server Protocol) and related plugins
 	{
 		"neovim/nvim-lspconfig", -- Collection of configurations for built-in LSP client
@@ -240,8 +222,6 @@ return {
 			-- Automatically install LSP servers (optional, e.g., mason.nvim could be used here)
 		},
 		config = function()
-			local lspconfig = require("lspconfig")
-
 			-- Customize diagnostic display (virtual text, signs, etc.)
 			vim.diagnostic.config({ virtual_text = false, signs = true, float = { border = "rounded" } })
 			-- Show diagnostic popup on hover
@@ -251,67 +231,65 @@ return {
 				end,
 			})
 
-			-- Common on_attach function for LSP (maps for LSP features)
-			local on_attach = function(client, bufnr)
-				local bufmap = function(mode, lhs, rhs, desc)
-					vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
-				end
-				bufmap("n", "gd", "<cmd>lua vim.lsp.buf.definition()<CR>", "Go to definition")
-				bufmap("n", "gD", "<cmd>lua vim.lsp.buf.declaration()<CR>", "Go to declaration")
-				bufmap("n", "gr", "<cmd>lua vim.lsp.buf.references()<CR>", "Go to references")
-				bufmap("n", "gi", "<cmd>lua vim.lsp.buf.implementation()<CR>", "Go to implementation")
-				bufmap("n", "K", "<cmd>Lspsaga hover_doc<CR>", "Hover documentation") -- Use Lspsaga for hover doc
-				bufmap("n", "<Leader>ca", "<cmd>Lspsaga code_action<CR>", "Code Action") -- Show code actions
-				bufmap("n", "<Leader>rn", "<cmd>Lspsaga rename<CR>", "Rename symbol") -- Rename via Lspsaga
-				-- Format on command
-				bufmap("n", "<Leader>f", "<cmd>lua vim.lsp.buf.format({ async=true })<CR>", "Format file")
-			end
-
-			-- Additional completion capabilities for nvim-cmp:contentReference[oaicite:16]{index=16}
-			local capabilities = require("cmp_nvim_lsp").default_capabilities()
-
 			-- Enable language servers with the above on_attach and capabilities
-			-- Go (gopls)
-			if vim.fn.executable("gopls") == 1 then
-				lspconfig.gopls.setup({ on_attach = on_attach, capabilities = capabilities })
-			end
-			-- Python (pyright)
-			if vim.fn.executable("pyright") == 1 then
-				lspconfig.pyright.setup({ on_attach = on_attach, capabilities = capabilities })
-			end
-			-- Rust (rust-analyzer)
-			if vim.fn.executable("rust-analyzer") == 1 then
-				lspconfig.rust_analyzer.setup({ on_attach = on_attach, capabilities = capabilities })
-			end
-			-- JavaScript/TypeScript (tsserver via typescript-language-server)
-			if vim.fn.executable("typescript-language-server") == 1 then
-				lspconfig.ts_ls.setup({ on_attach = on_attach, capabilities = capabilities })
-			end
-			-- C/C++ (clangd)
-			if vim.fn.executable("clangd") == 1 then
-				lspconfig.clangd.setup({ on_attach = on_attach, capabilities = capabilities })
-			end
-			-- Nix (nixd)
-			if vim.fn.executable("nixd") == 1 then
-				lspconfig.nixd.setup({ on_attach = on_attach, capabilities = capabilities })
-			end
+			-- lua
+			vim.lsp.config("lua_ls", {
+				cmd = { "lua-language-server" },
+				filetypes = { "lua" },
+				root_markers = { ".git" },
+			})
+			vim.lsp.enable("lua_ls")
 
-			-- KittyCAD KCL language server (custom, if available):contentReference[oaicite:17]{index=17}:contentReference[oaicite:18]{index=18}
-			if vim.fn.executable("kcl-language-server") == 1 then
-				-- If not already defined in lspconfig, define it
-				local configs = require("lspconfig.configs")
-				if not configs.kcl_ls then
-					configs.kcl_ls = {
-						default_config = {
-							cmd = { "kcl-language-server", "server", "--stdio" },
-							filetypes = { "kcl" },
-							root_dir = lspconfig.util.root_pattern(".git"),
-							single_file_support = true,
-						},
-					}
-				end
-				lspconfig.kcl_ls.setup({ on_attach = on_attach, capabilities = capabilities })
-			end
+			-- golang
+			vim.lsp.config("gopls", {
+				cmd = { "gopls" },
+				filetypes = { "go" },
+				root_markers = { ".git" },
+			})
+			vim.lsp.enable("gopls")
+
+			-- Rust
+			vim.lsp.config("rust-analyzer", {
+				cmd = { "rust-analyzer" },
+				filetypes = { "rs" },
+				root_markers = {
+					".git",
+					"Cargo.toml",
+				},
+			})
+			vim.lsp.enable("rust-analyzer")
+
+			-- Typescript/Javascript
+			vim.lsp.config("typescript-language-server", {
+				cmd = { "typescript-language-server" },
+				filetypes = {
+					"ts",
+					"js",
+					"tsx",
+					"jsx",
+				},
+				root_markers = {
+					".git",
+					"package.json",
+				},
+			})
+			vim.lsp.enable("typescript-language-server")
+
+			-- Kotlin
+			vim.lsp.config("kotlin-lsp", {
+				cmd = { "kotlin-lsp" },
+				filetypes = { "kt" },
+				root_markers = { ".git" },
+			})
+			vim.lsp.enable("kotlin-lsp")
+
+			-- C#
+			vim.lsp.config("omnisharp", {
+				cmd = { "OmniSharp" },
+				filetypes = { "cs" },
+				root_markers = { ".git" },
+			})
+			vim.lsp.enable("omnisharp")
 		end,
 	},
 
