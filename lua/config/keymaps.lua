@@ -15,6 +15,9 @@ map("n", "<C-z>", ":bprevious<CR>", "Previous buffer") -- Ctrl-Z: switch to prev
 map("n", "<C-a>", "<cmd>NvimTreeToggle<CR>", "Toggle file tree") -- Ctrl-A: open/close file explorer sidebar
 map("n", "<C-r>", "<cmd>NvimTreeRefresh<CR>", "Refresh file tree") -- Ctrl-R: refresh file explorer (e.g., after changes)
 
+-- Terminal mappings
+map("t", "<Esc>", "<C-\\><C-N>", "Normal mode")
+
 -- Multiple cursors (vim-visual-multi) will use <C-n> by default:
 -- In normal mode <C-n> starts adding a cursor at current word, in visual it adds another selection.
 -- We ensure <C-n> is not mapped to anything else, so no explicit mapping needed here (plugin handles it).

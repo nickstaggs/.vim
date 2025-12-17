@@ -157,6 +157,7 @@ return {
 		end,
 		dependencies = { "nvim-tree/nvim-web-devicons" }, -- for file icons in statusline
 	},
+
 	{
 		"akinsho/bufferline.nvim",
 		event = "VeryLazy",
